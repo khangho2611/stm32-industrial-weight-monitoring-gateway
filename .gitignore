@@ -1,0 +1,13 @@
+.pio/
+.vscode/
+.idea/
+
+include/secrets.h
+
+*.doc
+*.docx
+*.rar
+*.zip
+
+Thumbs.db
+.DS_Store

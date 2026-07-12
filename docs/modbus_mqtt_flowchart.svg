@@ -1,0 +1,201 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="1700" viewBox="0 0 1400 1700">
+  <defs>
+    <style>
+      .bg { fill: #f7f9fc; }
+      .title { font: 700 36px Arial, sans-serif; fill: #172033; }
+      .subtitle { font: 400 18px Arial, sans-serif; fill: #56627a; }
+      .laneTitle { font: 700 20px Arial, sans-serif; fill: #172033; }
+      .boxText { font: 600 17px Arial, sans-serif; fill: #152033; }
+      .smallText { font: 400 14px Arial, sans-serif; fill: #39445a; }
+      .noteText { font: 400 15px Arial, sans-serif; fill: #2c374d; }
+      .box { fill: #ffffff; stroke: #93a4bd; stroke-width: 2; rx: 8; }
+      .process { fill: #ffffff; stroke: #4d78b8; stroke-width: 2; rx: 8; }
+      .io { fill: #f0f7ff; stroke: #2d74c4; stroke-width: 2; rx: 8; }
+      .decision { fill: #fff7e8; stroke: #d68a00; stroke-width: 2; }
+      .publish { fill: #eefaf1; stroke: #3a9850; stroke-width: 2; rx: 8; }
+      .error { fill: #fff1f1; stroke: #c44a4a; stroke-width: 2; rx: 8; }
+      .lane { fill: #ffffff; stroke: #d8e0ec; stroke-width: 2; rx: 14; }
+      .note { fill: #fffdf1; stroke: #d5bf54; stroke-width: 1.5; rx: 8; }
+      .arrow { stroke: #324058; stroke-width: 2.5; fill: none; marker-end: url(#arrow); }
+      .arrowThin { stroke: #6b7890; stroke-width: 2; fill: none; marker-end: url(#arrow); }
+      .label { font: 700 14px Arial, sans-serif; fill: #324058; }
+      .mono { font: 600 14px Consolas, monospace; fill: #263248; }
+    </style>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#324058"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1400" height="1700"/>
+
+  <text class="title" x="700" y="58" text-anchor="middle">Flowchart firmware STM32F411: Modbus RTU RS485 → MQTT SIM7600</text>
+  <text class="subtitle" x="700" y="88" text-anchor="middle">Nhận dữ liệu cân từ PLC, lưu Holding Register, phát hiện thay đổi và publish JSON lên MQTT</text>
+
+  <rect class="lane" x="70" y="125" width="1260" height="395"/>
+  <text class="laneTitle" x="100" y="160">1. Khởi động - setup()</text>
+
+  <rect class="process" x="155" y="190" width="220" height="72"/>
+  <text class="boxText" x="265" y="218" text-anchor="middle">Power on</text>
+  <text class="smallText" x="265" y="242" text-anchor="middle">MCU bắt đầu chạy</text>
+
+  <rect class="process" x="435" y="190" width="245" height="72"/>
+  <text class="boxText" x="557" y="216" text-anchor="middle">Init phần cứng</text>
+  <text class="smallText" x="557" y="239" text-anchor="middle">Serial, RS485, BUS, HR[]</text>
+
+  <polygon class="decision" points="820,180 950,226 820,272 690,226"/>
+  <text class="boxText" x="820" y="219" text-anchor="middle">GPRS OK?</text>
+  <text class="smallText" x="820" y="241" text-anchor="middle">connectCell()</text>
+
+  <polygon class="decision" points="1090,180 1220,226 1090,272 960,226"/>
+  <text class="boxText" x="1090" y="219" text-anchor="middle">MQTT OK?</text>
+  <text class="smallText" x="1090" y="241" text-anchor="middle">connectMQTT()</text>
+
+  <rect class="publish" x="832" y="355" width="258" height="86"/>
+  <text class="boxText" x="961" y="383" text-anchor="middle">Publish lần đầu</text>
+  <text class="smallText" x="961" y="407" text-anchor="middle">NLDEMO và NLD2</text>
+  <text class="mono" x="961" y="429" text-anchor="middle">publishScale(scales[i])</text>
+
+  <rect class="note" x="145" y="350" width="555" height="92"/>
+  <text class="noteText" x="165" y="378">Register map:</text>
+  <text class="mono" x="165" y="402">NLDEMO: KL HR[1..2], SL HR[3..4], TONG HR[5..6]</text>
+  <text class="mono" x="165" y="426">NLD2:   KL HR[7..8], SL HR[9..10], TONG HR[11..12]</text>
+
+  <path class="arrow" d="M375 226 H435"/>
+  <path class="arrow" d="M680 226 H690"/>
+  <path class="arrow" d="M950 226 H960"/>
+  <path class="arrow" d="M1090 272 V355"/>
+  <text class="label" x="1110" y="320">Có</text>
+  <path class="arrowThin" d="M820 180 C820 130 690 130 690 210"/>
+  <text class="label" x="734" y="143">Không: retry 2s</text>
+  <path class="arrowThin" d="M1090 180 C1090 130 960 130 960 210"/>
+  <text class="label" x="1005" y="143">Không: retry 2s</text>
+
+  <rect class="lane" x="70" y="565" width="1260" height="735"/>
+  <text class="laneTitle" x="100" y="600">2. Vòng lặp chính - loop()</text>
+
+  <rect class="io" x="120" y="635" width="245" height="78"/>
+  <text class="boxText" x="242" y="664" text-anchor="middle">Đọc RS485</text>
+  <text class="smallText" x="242" y="688" text-anchor="middle">BUS.available(), BUS.read()</text>
+
+  <polygon class="decision" points="520,625 665,674 520,723 375,674"/>
+  <text class="boxText" x="520" y="666" text-anchor="middle">Frame đủ?</text>
+  <text class="smallText" x="520" y="690" text-anchor="middle">gap &gt; 5 ms</text>
+
+  <rect class="process" x="735" y="635" width="265" height="78"/>
+  <text class="boxText" x="867" y="665" text-anchor="middle">processFrame()</text>
+  <text class="smallText" x="867" y="689" text-anchor="middle">kiểm ID, CRC, function code</text>
+
+  <polygon class="decision" points="1160,625 1285,674 1160,723 1035,674"/>
+  <text class="boxText" x="1160" y="666" text-anchor="middle">FC16?</text>
+  <text class="smallText" x="1160" y="690" text-anchor="middle">ghi register</text>
+
+  <polygon class="decision" points="305,805 435,852 305,899 175,852"/>
+  <text class="boxText" x="305" y="844" text-anchor="middle">Range hợp lệ?</text>
+  <text class="smallText" x="305" y="867" text-anchor="middle">addr 1,3,5,7,9,11</text>
+
+  <rect class="process" x="505" y="813" width="235" height="78"/>
+  <text class="boxText" x="622" y="843" text-anchor="middle">Ghi HR[]</text>
+  <text class="smallText" x="622" y="867" text-anchor="middle">2 thanh ghi / giá trị</text>
+
+  <rect class="process" x="810" y="813" width="245" height="78"/>
+  <text class="boxText" x="932" y="843" text-anchor="middle">updateDirtyFlags()</text>
+  <text class="smallText" x="932" y="867" text-anchor="middle">dữ liệu đổi → dirty=true</text>
+
+  <rect class="io" x="1115" y="813" width="175" height="78"/>
+  <text class="boxText" x="1202" y="843" text-anchor="middle">Trả ACK</text>
+  <text class="smallText" x="1202" y="867" text-anchor="middle">FC16 response</text>
+
+  <polygon class="decision" points="305,975 435,1022 305,1069 175,1022"/>
+  <text class="boxText" x="305" y="1014" text-anchor="middle">FC03?</text>
+  <text class="smallText" x="305" y="1037" text-anchor="middle">debug đọc HR</text>
+
+  <rect class="io" x="505" y="983" width="235" height="78"/>
+  <text class="boxText" x="622" y="1013" text-anchor="middle">Trả dữ liệu HR</text>
+  <text class="smallText" x="622" y="1037" text-anchor="middle">chỉ đọc HR[1..12]</text>
+
+  <rect class="error" x="810" y="983" width="245" height="78"/>
+  <text class="boxText" x="932" y="1013" text-anchor="middle">Modbus exception</text>
+  <text class="smallText" x="932" y="1037" text-anchor="middle">CRC sai / addr sai / FC06</text>
+
+  <polygon class="decision" points="305,1145 435,1192 305,1239 175,1192"/>
+  <text class="boxText" x="305" y="1184" text-anchor="middle">Link OK?</text>
+  <text class="smallText" x="305" y="1207" text-anchor="middle">GPRS + MQTT</text>
+
+  <rect class="process" x="505" y="1153" width="235" height="78"/>
+  <text class="boxText" x="622" y="1183" text-anchor="middle">mqtt.poll()</text>
+  <text class="smallText" x="622" y="1207" text-anchor="middle">duy trì MQTT keepalive</text>
+
+  <polygon class="decision" points="932,1145 1062,1192 932,1239 802,1192"/>
+  <text class="boxText" x="932" y="1184" text-anchor="middle">Có cân dirty?</text>
+  <text class="smallText" x="932" y="1207" text-anchor="middle">scales[i].dirty</text>
+
+  <rect class="publish" x="1115" y="1153" width="175" height="78"/>
+  <text class="boxText" x="1202" y="1183" text-anchor="middle">Publish MQTT</text>
+  <text class="smallText" x="1202" y="1207" text-anchor="middle">JSON + topic</text>
+
+  <path class="arrow" d="M365 674 H375"/>
+  <path class="arrow" d="M665 674 H735"/>
+  <text class="label" x="692" y="655">Có</text>
+  <path class="arrowThin" d="M520 723 V760 H242 V713"/>
+  <text class="label" x="390" y="754">Chưa đủ: đọc tiếp</text>
+  <path class="arrow" d="M1000 674 H1035"/>
+  <path class="arrow" d="M1160 723 V770 H305 V805"/>
+  <text class="label" x="1174" y="760">Có</text>
+  <path class="arrow" d="M435 852 H505"/>
+  <text class="label" x="460" y="834">Có</text>
+  <path class="arrow" d="M740 852 H810"/>
+  <path class="arrow" d="M1055 852 H1115"/>
+  <path class="arrowThin" d="M305 899 V940"/>
+  <text class="label" x="326" y="927">Không</text>
+  <path class="arrowThin" d="M1160 625 V555 H305 V805"/>
+  <text class="label" x="1182" y="605">Không: check FC03/FC06</text>
+
+  <path class="arrow" d="M305 940 V975"/>
+  <path class="arrow" d="M435 1022 H505"/>
+  <text class="label" x="460" y="1004">Có</text>
+  <path class="arrowThin" d="M305 1069 V1115"/>
+  <text class="label" x="326" y="1097">Không</text>
+  <path class="arrowThin" d="M740 1022 H810"/>
+  <path class="arrowThin" d="M305 1115 V1145"/>
+
+  <path class="arrow" d="M435 1192 H505"/>
+  <text class="label" x="460" y="1174">Có</text>
+  <path class="arrowThin" d="M305 1239 V1272 H120 V674"/>
+  <text class="label" x="187" y="1270">Không: delay 500 ms rồi lặp</text>
+  <path class="arrow" d="M740 1192 H802"/>
+  <path class="arrow" d="M1062 1192 H1115"/>
+  <text class="label" x="1085" y="1174">Có</text>
+  <path class="arrowThin" d="M932 1239 V1272 H120 V674"/>
+  <text class="label" x="740" y="1270">Không: quay lại loop</text>
+  <path class="arrowThin" d="M1202 1231 V1272 H120 V674"/>
+
+  <rect class="lane" x="70" y="1345" width="1260" height="275"/>
+  <text class="laneTitle" x="100" y="1380">3. publishScale()</text>
+
+  <rect class="process" x="120" y="1420" width="210" height="76"/>
+  <text class="boxText" x="225" y="1449" text-anchor="middle">Lấy thời gian</text>
+  <text class="smallText" x="225" y="1472" text-anchor="middle">CCLK / NTP / fallback</text>
+
+  <rect class="process" x="395" y="1420" width="210" height="76"/>
+  <text class="boxText" x="500" y="1449" text-anchor="middle">Đọc HR cân</text>
+  <text class="smallText" x="500" y="1472" text-anchor="middle">readScaleRegs()</text>
+
+  <rect class="process" x="670" y="1420" width="210" height="76"/>
+  <text class="boxText" x="775" y="1449" text-anchor="middle">Đổi đơn vị</text>
+  <text class="smallText" x="775" y="1472" text-anchor="middle">KL/TONG ÷ 100</text>
+
+  <rect class="publish" x="945" y="1420" width="210" height="76"/>
+  <text class="boxText" x="1050" y="1449" text-anchor="middle">Gửi JSON</text>
+  <text class="smallText" x="1050" y="1472" text-anchor="middle">QoS 1, retained=true</text>
+
+  <rect class="process" x="530" y="1530" width="340" height="60"/>
+  <text class="boxText" x="700" y="1555" text-anchor="middle">Cập nhật trạng thái</text>
+  <text class="smallText" x="700" y="1578" text-anchor="middle">last = cur, dirty = false, msg_id++</text>
+
+  <path class="arrow" d="M330 1458 H395"/>
+  <path class="arrow" d="M605 1458 H670"/>
+  <path class="arrow" d="M880 1458 H945"/>
+  <path class="arrow" d="M1050 1496 V1560 H870"/>
+
+  <text class="subtitle" x="700" y="1655" text-anchor="middle">Topic mẫu: weight/push/NLDEMO/ hoặc weight/push/NLD2/ · Payload gồm weight_code, timestamp, msg_id, KL, SL, TONG, value</text>
+</svg>
